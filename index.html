@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="id">
+    <!-- endkripsi angka jadi text yang tidak bisa di baca -->
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Encoder — Offline (Safe)</title>
+  <style>
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial;background:#0f172a;color:#e6eef8}
+    .wrap{max-width:880px;margin:28px auto;padding:20px;border-radius:12px;background:linear-gradient(180deg,#071028 0%, #071827 100%);box-shadow:0 10px 40px rgba(2,6,23,.6)}
+    header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}
+    h1{margin:0;font-size:20px}
+    .muted{color:#93c5fd;font-size:13px}
+
+    .btn-guide{
+      padding:8px 14px;
+      border-radius:8px;
+      border:0;
+      cursor:pointer;
+      background:#38bdf8;
+      color:#042023;
+      font-weight:700;
+    }
+
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.03);padding:16px;border-radius:10px}
+    .grid{display:grid;grid-template-columns:1fr 320px;gap:16px}
+    @media (max-width:880px){.grid{grid-template-columns:1fr}}
+
+    /* ————— FIX: PETUNJUK KE BAWAH DI HP KECIL ————— */
+    @media (max-width:480px){
+      .grid{
+        display:flex;
+        flex-direction:column;
+      }
+      #guideBox{
+        order:99;
+        margin-top:20px;
+      }
+    }
+    /* ——————————————————————————————— */
+
+    label{display:block;font-size:13px;color:#cfe8ff;margin-bottom:6px}
+    input[type="text"], input[type="password"], textarea, select{width:100%;padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:#e6eef8;font-size:14px}
+    textarea{min-height:120px;resize:vertical}
+    .row{display:flex;gap:8px;align-items:center}
+    button{padding:10px 12px;border-radius:10px;border:0;cursor:pointer;font-weight:700;background:#06b6d4;color:#042023}
+    button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.05);color:#9bdcff}
+    .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+    .result{word-break:break-all;background:rgba(0,0,0,0.28);padding:12px;border-radius:8px;font-family:monospace;color:#dbeafe}
+    .small{font-size:13px;color:#9bdcff}
+    .hint{font-size:12px;color:#8fbce6;margin-top:8px}
+    .toggle{padding:8px 10px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.04);color:#9bdcff;cursor:pointer}
+    .right-col{display:flex;flex-direction:column;gap:12px}
+    .ok{color:#86efac}
+    .err{color:#fda4af}
+    .copy-btn{
+      padding:8px 10px;
+      border-radius:8px;
+      border:1px solid rgba(255,255,255,0.1);
+      background:#1e293b;
+      color:#9bdcff;
+      cursor:pointer;
+      font-size:12px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="wrap">
+    <header>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <h1>Encode / Decode</h1>
+        <button class="btn-guide" id="btnGuide">PETUNJUK</button>
+      </div>
+
+      <!-- FIX: hyperlink Telegram -->
+      <div class="muted small">
+        Dev <a href="https://t.me/Artha_Prad" target="_blank" style="color:#93c5fd;text-decoration:none;">t.me/Artha_Prad</a>
+      </div>
+    </header>
+
+    <div class="grid">
+      <main class="card" aria-live="polite">
+        
+        <!-- ENCODE PANEL -->
+        <div id="encode-panel">
+          <label>Masukkan angka (digit saja)</label>
+          <input id="input-number" inputmode="numeric" placeholder="contoh: 123456" />
+
+          <div style="margin-top:12px;">
+            <label>Pakai password?</label>
+            <div class="row" style="margin-top:6px;">
+              <button id="usePwYes" class="ghost">Ya</button>
+              <button id="usePwNo" class="ghost ok">Tidak</button>
+            </div>
+            <div class="hint">Mode password opsional — pilih kalau mau proteksi tambahan.</div>
+          </div>
+
+          <div id="pw-area" style="display:none;margin-top:12px;">
+            <label>Password (masukkan dua kali)</label>
+            <div class="row">
+              <input id="input-pass" type="password" placeholder="Password" style="flex:1" />
+              <button id="toggle-show" class="toggle" type="button">Show</button>
+            </div>
+            <div class="row" style="margin-top:8px;">
+              <input id="input-pass-confirm" type="password" placeholder="Konfirmasi password" style="flex:1" />
+              <button id="gen-pass" class="toggle" type="button">Gen</button>
+            </div>
+            <div id="pw-check" class="hint"></div>
+          </div>
+
+          <div class="controls">
+            <button id="btn-encode">Encode</button>
+            <button id="btn-clear" class="ghost" type="button">Clear</button>
+            <button id="download-encode" class="ghost" type="button">Download</button>
+            <button id="copy-encode" class="copy-btn" type="button">Salin</button>
+          </div>
+
+          <div style="margin-top:14px;">
+            <label>Hasil</label>
+            <div id="encode-result" class="result">-</div>
+          </div>
+        </div>
+
+        <hr style="opacity:.06;margin:16px 0"/>
+
+        <!-- DECODE PANEL -->
+        <div id="decode-panel">
+          <label>Tempel kode di sini</label>
+          <textarea id="input-code" placeholder="Tempel kode hasil encode"></textarea>
+
+          <div style="margin-top:12px;">
+            <label>Jika kode pakai password, masukkan password</label>
+            <div class="row">
+              <input id="input-decode-pass" type="password" placeholder="Password (opsional)" style="flex:1" />
+              <button id="toggle-show-decode" class="toggle" type="button">Show</button>
+            </div>
+          </div>
+
+          <div class="controls">
+            <button id="btn-decode">Decode</button>
+            <button id="btn-clear-decode" class="ghost" type="button">Clear</button>
+            <button id="download-decode" class="ghost" type="button">Download</button>
+            <button id="copy-decode" class="copy-btn" type="button">Salin</button>
+          </div>
+
+          <div style="margin-top:14px;">
+            <label>Hasil</label>
+            <div id="decode-result" class="result">-</div>
+          </div>
+        </div>
+      </main>
+
+      <!-- PETUNJUK / SIDEBAR -->
+      <aside class="right-col" id="guideBox">
+        <div class="card">
+          <h3 style="margin:0 0 8px 0">Catatan penting</h3>
+          <p class="small">Halaman ini offline, semua proses lokal. Jangan share password.</p>
+        </div>
+
+        <div class="card">
+          <h4 style="margin:0 0 8px 0">Cara pakai singkat</h4>
+          <ul class="small" style="margin:0;padding-left:18px">
+            <li>Isi angka → pilih mode password jika mau.</li>
+            <li>Kalau pakai password, isi dua kali & bisa generate otomatis.</li>
+            <li>Tekan Encode → copy atau Download hasil.</li>
+            <li>Decode hanya butuh kode + password (jika ada).</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h4 style="margin:0 0 8px 0">Keamanan singkat</h4>
+          <p class="small">Tidak ada data keluar. File aman dikirim sebagai hasil encode.</p>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+<script>
+/* BASE FUNCTIONS */
+function uint8ToBase64(u8){ let CH=0x8000,c=[]; for(let i=0;i<u8.length;i+=CH)c.push(String.fromCharCode.apply(null,u8.subarray(i,i+CH))); return btoa(c.join('')); }
+function base64ToUint8(b64){ const bin=atob(b64); const a=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) a[i]=bin.charCodeAt(i); return a; }
+function stripPadding(b64){ return b64.replace(/=+$/,''); }
+function decodeBase64Lenient(b64){ const pad='='.repeat((4-(b64.length%4))%4); return base64ToUint8(b64+pad); }
+function encodeBase64NoPad(bytes){ return stripPadding(uint8ToBase64(bytes)); }
+function randBytes(n){ const a=new Uint8Array(n); crypto.getRandomValues(a); return a; }
+async function sha256Bytes(text){ const enc=new TextEncoder().encode(text); const h=await crypto.subtle.digest('SHA-256',enc); return new Uint8Array(h); }
+function xorBytes(a,b){ const o=new Uint8Array(a.length); for(let i=0;i<a.length;i++) o[i]=a[i]^b[i%b.length]; return o; }
+
+const g = q => document.getElementById(q);
+
+/* UI */
+const inputNumber=g('input-number');
+const usePwYes=g('usePwYes');
+const usePwNo=g('usePwNo');
+const pwArea=g('pw-area');
+const inputPass=g('input-pass');
+const inputPassConfirm=g('input-pass-confirm');
+const pwCheck=g('pw-check');
+const toggleShow=g('toggle-show');
+const genPass=g('gen-pass');
+const btnEncode=g('btn-encode');
+const encodeResult=g('encode-result');
+const downloadEncode=g('download-encode');
+const btnClear=g('btn-clear');
+const copyEncode=g('copy-encode');
+
+const inputCode=g('input-code');
+const inputDecodePass=g('input-decode-pass');
+const btnDecode=g('btn-decode');
+const decodeResult=g('decode-result');
+const downloadDecode=g('download-decode');
+const toggleShowDecode=g('toggle-show-decode');
+const btnClearDecode=g('btn-clear-decode');
+const copyDecode=g('copy-decode');
+
+const btnGuide=g('btnGuide');
+const guideBox=g('guideBox');
+
+/* GUIDE SCROLL */
+btnGuide.addEventListener('click',()=>{
+  guideBox.scrollIntoView({behavior:'smooth'});
+});
+
+/* MODE */
+let usePassword=false;
+
+usePwYes.addEventListener('click',()=>{
+  usePassword=true;
+  usePwYes.classList.add('ok'); usePwYes.classList.remove('ghost');
+  usePwNo.classList.add('ghost'); usePwNo.classList.remove('ok');
+  pwArea.style.display='';
+});
+
+usePwNo.addEventListener('click',()=>{
+  usePassword=false;
+  usePwNo.classList.add('ok'); usePwNo.classList.remove('ghost');
+  usePwYes.classList.add('ghost'); usePwYes.classList.remove('ok');
+  pwArea.style.display='none';
+});
+
+/* PASSWORD TOGGLE */
+toggleShow.addEventListener('click',()=>{
+  const t=inputPass.type==='password';
+  inputPass.type=t?'text':'password';
+  inputPassConfirm.type=t?'text':'password';
+  toggleShow.textContent=t?'Hide':'Show';
+});
+
+toggleShowDecode.addEventListener('click',()=>{
+  const t=inputDecodePass.type==='password';
+  inputDecodePass.type=t?'text':'password';
+  toggleShowDecode.textContent=t?'Hide':'Show';
+});
+
+/* GEN PASS */
+genPass.addEventListener('click',()=>{
+  const words=["sora","luna","kala","rasa","nexa","tela","vira","mika","zora","bima"];
+  const w=words[Math.random()*words.length|0];
+  const w2=words[Math.random()*words.length|0];
+  const n=(Math.random()*900|0)+100;
+  const s="!#@";
+  const out=`${w}${w2}${n}${s[Math.random()*s.length|0]}`;
+  inputPass.value=out;
+  inputPassConfirm.value=out;
+  inputPass.type='text'; inputPassConfirm.type='text';
+  toggleShow.textContent='Hide';
+  checkPassUI();
+});
+
+/* PASS CHECK */
+function checkPasswordStrength(pw){
+  return {
+    lengthOk:pw.length>=4,
+    upper:/[A-Z]/.test(pw),
+    lower:/[a-z]/.test(pw),
+    digit:/\d/.test(pw),
+    special:/[^A-Za-z0-9]/.test(pw)
+  };
+}
+
+function checkPassUI(){
+  const a=inputPass.value;
+  const b=inputPassConfirm.value;
+  const s=checkPasswordStrength(a);
+  if(!s.lengthOk) pwCheck.innerHTML='<span class="err">Minimal 4 karakter</span>';
+  else if(a!==b) pwCheck.innerHTML='<span class="err">Tidak cocok</span>';
+  else if(!s.upper||!s.lower||!s.digit||!s.special) pwCheck.innerHTML='<span class="small">Password boleh, tapi kurang kuat</span>';
+  else pwCheck.innerHTML='<span class="ok">Password kuat</span>';
+}
+
+inputPass.addEventListener('input',checkPassUI);
+inputPassConfirm.addEventListener('input',checkPassUI);
+
+inputNumber.addEventListener('input',()=>inputNumber.value=inputNumber.value.replace(/[^0-9]/g,''));
+
+/* COPY */
+copyEncode.addEventListener('click',()=>{
+  const t=encodeResult.textContent.trim();
+  if(t&&t!=='-'){ 
+    navigator.clipboard.writeText(t); 
+    copyEncode.textContent="Tersalin!"; 
+    setTimeout(()=>copyEncode.textContent="Salin",1000); 
+  }
+});
+
+copyDecode.addEventListener('click',()=>{
+  const t=decodeResult.textContent.trim();
+  if(t&&t!=='-'){ 
+    navigator.clipboard.writeText(t); 
+    copyDecode.textContent="Tersalin!"; 
+    setTimeout(()=>copyDecode.textContent="Salin",1000); 
+  }
+});
+
+/* ENCODE */
+btnEncode.addEventListener('click',async()=>{
+  const angka=inputNumber.value.trim();
+  if(!/^\d+$/.test(angka)){ alert("Input harus angka aja bro."); return; }
+
+  if(usePassword){
+    if(inputPass.value.length<4){ alert("Password minimal 4 karakter."); return; }
+    if(inputPass.value!==inputPassConfirm.value){ alert("Password beda."); return; }
+    const s=checkPasswordStrength(inputPass.value);
+    if(!(s.upper&&s.lower&&s.digit&&s.special)){
+      if(!confirm("Password agak lemah. Yakin lanjut?")) return;
+    }
+
+    const key=await sha256Bytes(inputPass.value);
+    const salt=randBytes(8),pad1=randBytes(6),pad2=randBytes(6);
+    const enc=xorBytes(new TextEncoder().encode(angka),key);
+    const header=new Uint8Array([0xA1,0xA2]);
+    const data=new Uint8Array(header.length+salt.length+pad1.length+enc.length+pad2.length);
+    let p=0;
+    data.set(header,p);p+=header.length;
+    data.set(salt,p);p+=salt.length;
+    data.set(pad1,p);p+=pad1.length;
+    data.set(enc,p);p+=enc.length;
+    data.set(pad2,p);
+    encodeResult.textContent=encodeBase64NoPad(data);
+
+  } else {
+    const header=new Uint8Array([0xB2]);
+    const noise=randBytes(5),tail=randBytes(5),textBytes=new TextEncoder().encode(angka);
+    const data=new Uint8Array(header.length+noise.length+textBytes.length+tail.length);
+    let p=0;
+    data.set(header,p);p+=header.length;
+    data.set(noise,p);p+=noise.length;
+    data.set(textBytes,p);p+=textBytes.length;
+    data.set(tail,p);
+    encodeResult.textContent=encodeBase64NoPad(data);
+  }
+});
+
+/* DECODE */
+btnDecode.addEventListener('click',async()=>{
+  const kode=inputCode.value.trim();
+  if(!kode){ alert("Tempel kodenya dulu."); return; }
+
+  let raw;
+  try{ raw=decodeBase64Lenient(kode); }
+  catch{ alert("Kode invalid."); return; }
+
+  if(raw[0]===0xA1 && raw[1]===0xA2){
+    if(!inputDecodePass.value){ alert("Kode ini pakai password."); return; }
+    const key=await sha256Bytes(inputDecodePass.value);
+    if(raw.length<=22){ decodeResult.textContent="Data invalid."; return; }
+    const encrypted=raw.slice(16,raw.length-6);
+    try{
+      const dec=xorBytes(encrypted,key);
+      const text=new TextDecoder().decode(dec);
+      if(!/^\d+$/.test(text)){ decodeResult.textContent="Password salah."; return; }
+      decodeResult.textContent=text;
+    }catch{
+      decodeResult.textContent="Data rusak.";
+    }
+
+  } else if(raw[0]===0xB2){
+    if(raw.length<11){ decodeResult.textContent="Invalid"; return; }
+    const angka=new TextDecoder().decode(raw.slice(6,raw.length-5));
+    decodeResult.textContent=angka;
+  } else {
+    decodeResult.textContent="Format tidak dikenali.";
+  }
+});
+
+/* DOWNLOAD */
+function downloadText(filename,t){
+  const blob=new Blob([t],{type:'text/plain'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=filename;a.click();
+  URL.revokeObjectURL(url);
+}
+
+downloadEncode.addEventListener('click',()=>{
+  const t=encodeResult.textContent.trim();
+  if(!t||t==='-'){ alert("Belum ada hasil."); return; }
+  downloadText(`encode_${Date.now()}.txt`,t);
+});
+
+downloadDecode.addEventListener('click',()=>{
+  const t=decodeResult.textContent.trim();
+  if(!t||t==='-'){ alert("Belum ada hasil."); return; }
+  downloadText(`decode_${Date.now()}.txt`,t);
+});
+
+/* CLEAR */
+btnClear.addEventListener('click',()=>{
+  inputNumber.value='';
+  inputPass.value='';
+  inputPassConfirm.value='';
+  encodeResult.textContent='-';
+  pwCheck.textContent='';
+});
+
+btnClearDecode.addEventListener('click',()=>{
+  inputCode.value='';
+  inputDecodePass.value='';
+  decodeResult.textContent='-';
+});
+</script>
+
+</body>
+</html>
